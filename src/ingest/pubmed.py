@@ -5,15 +5,25 @@ E-utilities is free but rate-limited to 3 requests/second without an API key
 exceeding the limit gets an IP throttled, which would look like a bug much
 later and in a different module.
 
-Only metadata is fetched (esearch + esummary). Full text is frequently
-paywalled, so the Evidence agent cites title/journal/year — and Module 12 must
-report that this is an abstract-level, not full-text, evidence base.
+DEVIATION FROM PLAN (found while building Module 6, not Module 3): esummary
+alone returns only citation metadata (title/journal/authors/date) — no
+abstract text. That was fine for a document *listing*, but the Evidence agent
+needs real text to ground claims against, the same way Module 5's Protocol
+agent grounds quotes against source text. A citation with nothing to quote
+cannot satisfy HG-2 honestly. Fixed by adding an efetch call that pulls the
+actual abstract; esummary is kept for date/journal formatting, which its XML
+does not expose as cleanly.
+
+Full article text is still not available (mostly paywalled) — the Evidence
+agent is therefore abstract-level, and that limitation is real and reported,
+not fixed by this change.
 """
 
 from __future__ import annotations
 
 import os
 from datetime import date
+from xml.etree import ElementTree
 
 from src.ingest.client import ApiClient
 from src.schemas import RawDocument, SourceType
@@ -53,6 +63,41 @@ def search(query: str, max_results: int = 10) -> list[str]:
     return payload.get("esearchresult", {}).get("idlist", [])
 
 
+def fetch_abstracts(pmids: list[str]) -> dict[str, str]:
+    """Real abstract text via efetch, keyed by PMID. Missing/absent abstracts
+    (some article types genuinely have none) are simply not in the returned
+    dict — callers must check, not assume every PMID has an entry."""
+    if not pmids:
+        return {}
+
+    with _client() as api:
+        response = api.get(
+            "/efetch.fcgi",
+            params={
+                **_common_params(),
+                "db": "pubmed",
+                "id": ",".join(pmids),
+                "rettype": "abstract",
+                "retmode": "xml",
+            },
+        )
+
+    root = ElementTree.fromstring(response.text)
+    abstracts: dict[str, str] = {}
+    for article in root.findall(".//PubmedArticle"):
+        pmid_el = article.find(".//PMID")
+        if pmid_el is None or not pmid_el.text:
+            continue
+        parts = [
+            (node.text or "")
+            for node in article.findall(".//Abstract/AbstractText")
+        ]
+        text = " ".join(p.strip() for p in parts if p.strip())
+        if text:
+            abstracts[pmid_el.text] = text
+    return abstracts
+
+
 def fetch_summaries(pmids: list[str]) -> list[RawDocument]:
     """Metadata for a list of PMIDs. An empty input is an empty result."""
     if not pmids:
@@ -70,6 +115,7 @@ def fetch_summaries(pmids: list[str]) -> list[RawDocument]:
         )
 
     result = payload.get("result", {})
+    abstracts = fetch_abstracts(pmids)  # DEVIATION: added so claims have real text to quote
     documents: list[RawDocument] = []
 
     for pmid in result.get("uids", []):
@@ -79,6 +125,7 @@ def fetch_summaries(pmids: list[str]) -> list[RawDocument]:
 
         authors = [a.get("name", "") for a in record.get("authors", [])]
         author_line = ", ".join(authors[:5]) + (" et al." if len(authors) > 5 else "")
+        abstract = abstracts.get(pmid, "")
 
         text = "\n".join(
             line for line in [
@@ -87,6 +134,7 @@ def fetch_summaries(pmids: list[str]) -> list[RawDocument]:
                 f"Journal: {record.get('source', '')}",
                 f"Published: {record.get('pubdate', '')}",
                 f"Publication types: {', '.join(record.get('pubtype', []))}",
+                f"Abstract: {abstract}" if abstract else "",
             ] if line
         )
 
@@ -105,7 +153,8 @@ def fetch_summaries(pmids: list[str]) -> list[RawDocument]:
                     "pubdate": record.get("pubdate", ""),
                     "authors": authors,
                     "pubtype": record.get("pubtype", []),
-                    "abstract_only": True,  # no full text — stated, not hidden
+                    "has_abstract": bool(abstract),
+                    "abstract_only": True,  # no full article text — stated, not hidden
                 },
             )
         )

@@ -27,17 +27,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from src.agents.errors import GroundingError, is_grounded
 from src.ingest.ctgov import fetch_study
 from src.llm import EFFORT_EXTRACTION, get_client, model_name
 from src.schemas import Citation, ExtractedField, FieldStatus, ProtocolExtraction, SourceType
 
-
-class GroundingError(ValueError):
-    """The model returned a quote that is not actually in the source text.
-
-    Raised, not silently downgraded to not_specified — a fabricated quote is a
-    worse failure than an honest abstention, and it should be loud.
-    """
+__all__ = ["GroundingError", "extract"]
 
 
 # --------------------------------------------------------------------------
@@ -109,8 +104,9 @@ def _to_extracted_field(
     if llm_field.status == "not_specified":
         return ExtractedField.absent()
 
-    # The grounding check: the model's quote must actually be in the source.
-    if llm_field.quoted_text not in doc_text:
+    # The grounding check: the model's quote must actually be in the source
+    # (whitespace-normalized — see src/agents/errors.py for why).
+    if not is_grounded(llm_field.quoted_text, doc_text):
         raise GroundingError(
             f"model claimed a quote not present in the source document: "
             f"{llm_field.quoted_text!r}"

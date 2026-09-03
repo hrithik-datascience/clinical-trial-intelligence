@@ -14,7 +14,7 @@ A module is ✅ only if its code was actually run and the output inspected.
 | 3 | Data Ingestion | ✅ Working | 2026-09-03 | `python -m src.ingest.verify` | All 4 live sources OK; 21/21 tests |
 | 4 | Knowledge Base | ❌ | — | — | — |
 | 5 | Protocol Agent | ✅ Working | 2026-09-03 | `pytest tests/test_protocol_agent_live.py -v -s` | Real NCT04280705, grounding check verified, 27/27 tests |
-| 6 | Evidence Agent | ❌ | — | — | — |
+| 6 | Evidence Agent | ✅ Working | 2026-09-03 | `pytest tests/test_evidence_agent_live.py -v -s` | Real PubMed query, 5 grounded claims, strength=limited; 34/34 tests |
 | 7 | Regulatory Agent | ❌ | — | — | — |
 | 8 | Safety Agent | ❌ | — | — | — |
 | 9 | Supervisor Agent | ❌ | — | — | — |

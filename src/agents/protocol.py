@@ -113,7 +113,11 @@ def _to_extracted_field(
         )
 
     citation = Citation(
-        chunk_id=doc_id,  # whole-document id — Module 4 will replace with a real chunk id
+        # Whole-document id, not a KB chunk id: this agent extracts from one
+        # registry record it fetched live, so there is no retrieval step and
+        # nothing to point a chunk id at. Module 10's citation check resolves
+        # ids of this shape by source scheme (T-22).
+        chunk_id=doc_id,
         source_type=SourceType.PROTOCOL,
         source_name=source_name,
         retrieved_date=retrieved,

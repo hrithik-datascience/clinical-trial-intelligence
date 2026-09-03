@@ -51,6 +51,11 @@ class KnowledgeBase:
     def __len__(self) -> int:
         return len(self._chunks)
 
+    def get_chunk(self, chunk_id: str) -> Chunk | None:
+        """Resolve a chunk_id back to its chunk. Used by the Validation layer
+        (Module 10) to check that a citation points at something real."""
+        return next((c for c in self._chunks if c.chunk_id == chunk_id), None)
+
     def add_documents(self, docs: list[RawDocument]) -> int:
         """Chunk, embed and index. Returns the number of chunks added."""
         new_chunks = [c for doc in docs for c in chunk_document(doc)]

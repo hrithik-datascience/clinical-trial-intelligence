@@ -80,10 +80,17 @@ class EvidenceStrength(str, Enum):
 
 
 class Citation(BaseModel):
-    """A pointer back into the knowledge base.
+    """A pointer back to the source a claim came from.
 
-    chunk_id must resolve against the live index. The Validation layer checks
-    that separately; the schema only guarantees one was supplied.
+    chunk_id resolves either against the KB index (Regulatory, which
+    retrieves from it) or as a live-source document id — "ctgov:NCT04280705",
+    "pubmed:32214230", "faers:pembrolizumab" — for the agents that fetch
+    directly. The Validation layer (Module 10) checks resolution both ways
+    (T-22); the schema only guarantees an id was supplied.
+
+    This docstring originally promised the KB index for *every* citation.
+    That predated Module 4 settling that only Regulatory retrieves from the
+    KB, and was corrected in Module 10 rather than left to mislead.
     """
 
     chunk_id: str = Field(min_length=1)

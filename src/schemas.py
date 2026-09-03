@@ -251,6 +251,81 @@ class ValidationFlag(BaseModel):
 
 
 # --------------------------------------------------------------------------
+# Supervisor (Module 9) — routing and aggregation, before validation
+# --------------------------------------------------------------------------
+
+
+class RoutingMethod(str, Enum):
+    EXPLICIT = "explicit"  # caller named the agents; no model call made
+    LLM_INTENT = "llm_intent"  # model narrowed within the runnable set
+    CAPABILITY_ONLY = "capability_only"  # router unavailable/failed — ran everything runnable
+
+
+class RoutingDecision(BaseModel):
+    """Why these agents and not the others.
+
+    `selected` is always a subset of what the deterministic capability gate
+    found runnable (T-19) — the model can narrow this set, never extend it.
+    """
+
+    selected: list[AgentName] = Field(default_factory=list)
+    not_runnable: dict[str, str] = Field(default_factory=dict)  # agent -> missing input
+    method: RoutingMethod
+    rationale: str = Field(min_length=1)
+
+
+class AgentFailure(BaseModel):
+    """One agent that was selected, ran, and did not produce output.
+
+    Recorded rather than raised (T-20) so a single failure cannot destroy the
+    other agents' results. This is not the same as swallowing it: a failure
+    here is a visible field that the Validation layer turns into a
+    MISSING_AGENT_OUTPUT flag.
+    """
+
+    agent: AgentName
+    error_type: str = Field(min_length=1)
+    detail: str = Field(min_length=1)
+
+
+class SupervisorRun(BaseModel):
+    """What one orchestrated run produced.
+
+    Deliberately NOT a BriefingPacket (D-06): there is no overall_confidence
+    and no human_decision here, because scoring confidence is the Validation
+    layer's job (Module 10) and inventing a number now would be a placeholder
+    metric. A run with entries in `failures` is incomplete by definition —
+    never read this as a finished result.
+    """
+
+    run_id: str = Field(min_length=1)
+    query: str = Field(min_length=1)
+    created_at: datetime
+    routing: RoutingDecision
+
+    protocol: ProtocolExtraction | None = None
+    evidence: EvidenceSynthesis | None = None
+    regulatory: list[RegulatoryFinding] = Field(default_factory=list)
+    safety: SafetyScreen | None = None
+
+    failures: list[AgentFailure] = Field(default_factory=list)
+    elapsed_seconds: float = Field(ge=0.0)
+
+    @property
+    def agents_with_output(self) -> list[AgentName]:
+        produced = []
+        if self.protocol is not None:
+            produced.append(AgentName.PROTOCOL)
+        if self.evidence is not None:
+            produced.append(AgentName.EVIDENCE)
+        if self.regulatory:
+            produced.append(AgentName.REGULATORY)
+        if self.safety is not None:
+            produced.append(AgentName.SAFETY)
+        return produced
+
+
+# --------------------------------------------------------------------------
 # The packet the reviewer sees — HG-4
 # --------------------------------------------------------------------------
 

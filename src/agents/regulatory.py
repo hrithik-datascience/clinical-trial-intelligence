@@ -47,8 +47,12 @@ discusses, so a human reviewer can look closer.
 
 Rules, no exceptions:
 1. Every finding must cite one of the supplied clause_ids exactly as given.
-2. quoted_text must be copied VERBATIM from that clause's text — an exact \
-substring, not a paraphrase or summary.
+2. quoted_text must be copied VERBATIM from THE CLAUSE you are citing — an \
+exact substring of the guidance text, not a paraphrase or summary. Never \
+quote the protocol summary here: the protocol summary is the thing being \
+reviewed, and the clause is the guidance you are citing against it. If a \
+clause has no sentence that supports your point, drop the finding rather \
+than quoting the protocol back.
 3. Never use words like "compliant", "violates", "non-compliant", or \
 "approved" — you flag topics for review, you do not rule on them.
 4. If the protocol summary doesn't clearly relate to a supplied clause, \
@@ -86,11 +90,21 @@ def _display_label(chunk: Chunk) -> str:
        (what Module 7 originally used, before the KB existed) as the
        identifier shown to and expected back from the model, reserving the
        raw chunk_id for internal bookkeeping only.
+
+    3. Module 9 found that fix was only half applied. Deviation 2 changed
+       the clause-structured branch but left the fallback branch returning
+       the raw chunk_id — so an FDA E9(R1) chunk still asked the model to
+       echo "guidance:FDA_E9R1:9", and it still stripped the prefix,
+       failing identically ("model cited clause_id 'FDA_E9R1:9'"). It only
+       surfaced once a run actually retrieved a generic-chunked passage.
+       Both branches now produce the same short "<doc> <position>" shape,
+       with no namespace prefix for the model to tidy away.
     """
     clause_id = chunk.metadata.get("clause_id")
     if clause_id:
         return f"{chunk.metadata['guidance_key']} {clause_id}"
-    return chunk.chunk_id
+    # Generic-chunked guidance: "guidance:FDA_E9R1:9" -> "FDA_E9R1 9".
+    return f"{chunk.doc_id.split(':')[-1]} {chunk.chunk_id.rsplit(':', 1)[-1]}"
 
 
 def _build_prompt(protocol_summary: str, clauses: dict[str, tuple[str, str]]) -> str:

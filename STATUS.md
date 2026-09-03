@@ -1,49 +1,40 @@
-# STATUS — Clinical Trial Intelligence System (Project E)
+# STATUS — Clinical Trial Intelligence System
 
-**What this file is:** the honest, verified state of the build. A module is only `✅ Working`
-if its code has actually been executed and its real output inspected in-session.
+**Portfolio project. Public data only. NOT CLINICALLY VALIDATED.**
 
-**Standing disclaimer: NOT CLINICALLY VALIDATED. Portfolio / demonstration system only.
-Public data sources only. No PHI, no EHR/EMR, no proprietary sponsor data.**
+A module is ✅ only if its code was actually run and the output inspected.
+✅ Working · ⚠️ Partial · ❌ Not started · 🔴 Broken · 📄 Design-only
 
-Status values:
-- ✅ **Working** — ran successfully, output inspected and correct
-- ⚠️ **Partial** — runs, but output is wrong/incomplete (what's broken is stated)
-- ❌ **Not started**
-- 🔴 **Broken** — was working, a later change broke it
-- 📄 **Documented only** — a design/write-up module with no runnable artifact (labelled THEORETICAL)
+**18 modules** (collapsed from 23 — see `docs/modules/README.md`).
 
-| Module | Status | Last verified | Test/command run | Result summary |
-|---|---|---|---|---|
-| 0. Repo bootstrap | ✅ Working | 2026-09-02 | `git init -b main .` in project dir | Project-local repo created; home-directory repo no longer the commit target |
-| 1. Product & Problem Understanding | 📄 Documented only | 2026-09-02 | n/a — no code in this module | Problem framing, JD mapping, persona, 4 use cases, success criteria written to `docs/modules/module_01_product_problem.md` |
-| 2. System Architecture & Schema Design | ❌ Not started | — | — | — |
-| 3. Environment & Repository Setup | ❌ Not started | — | — | — |
-| 4. Data Ingestion | ❌ Not started | — | — | — |
-| 5. Knowledge Base Construction | ❌ Not started | — | — | — |
-| 6. Protocol Agent | ❌ Not started | — | — | — |
-| 7. Evidence Agent | ❌ Not started | — | — | — |
-| 8. Regulatory Agent | ❌ Not started | — | — | — |
-| 9. Safety Agent | ❌ Not started | — | — | — |
-| 10. Supervisor Agent | ❌ Not started | — | — | — |
-| 11. Validation Layer | ❌ Not started | — | — | — |
-| 12. Human Review Interface | ❌ Not started | — | — | — |
-| 13. Audit Log | ❌ Not started | — | — | — |
-| 14. Evaluation Harness | ❌ Not started | — | — | — |
-| 15. Observability | ❌ Not started | — | — | — |
-| 16. Containerization | ❌ Not started | — | — | — |
-| 17. CI/CD | ❌ Not started | — | — | — |
-| 18. Documentation & Demo Packaging | ❌ Not started | — | — | — |
-| 19. Cloud Architecture Mapping | ❌ Not started | — | — | — |
-| 20. Responsible AI & Governance Write-Up | ❌ Not started | — | — | — |
-| 21. Metrics Rollup | ❌ Not started | — | — | — |
-| 22. STAR Narrative Finalization | ❌ Not started | — | — | — |
-| 23. Mock Defense | ❌ Not started | — | — | — |
+| # | Module | Status | Verified | Command | Result |
+|---|---|---|---|---|---|
+| 1 | Product & Problem Understanding | 📄 Done | 2026-09-03 | — | Framing, 4 use cases, 5 hard gates, success criteria |
+| 2 | Architecture, Schemas & Repo Setup | ✅ Working | 2026-09-03 | `pytest tests/ -v` | 12/12 pass — HG-1..HG-4 enforced in Pydantic |
+| 3 | Data Ingestion | ❌ | — | — | — |
+| 4 | Knowledge Base | ❌ | — | — | — |
+| 5 | Protocol Agent | ❌ | — | — | — |
+| 6 | Evidence Agent | ❌ | — | — | — |
+| 7 | Regulatory Agent | ❌ | — | — | — |
+| 8 | Safety Agent | ❌ | — | — | — |
+| 9 | Supervisor Agent | ❌ | — | — | — |
+| 10 | Validation Layer | ❌ | — | — | — |
+| 11 | Human Review Interface | ❌ | — | — | — |
+| 12 | Audit Log & Observability | ❌ | — | — | — |
+| 13 | Evaluation Harness | ❌ | — | — | — |
+| 14 | Containerization & CI/CD | ❌ | — | — | — |
+| 15 | Documentation & Demo Packaging | ❌ | — | — | — |
+| 16 | Cloud Architecture & Responsible AI | ❌ | — | — | — |
+| 17 | Metrics Rollup & STAR Narrative | ❌ | — | — | — |
+| 18 | Mock Defense | ❌ | — | — | — |
 
-## Blocking items
+## Blockers
 
-| Blocker | Blocks | Needed from you |
+| Blocker | Blocks | Needed |
 |---|---|---|
-| Anthropic API key (and embedding provider decision) | Modules 5-14 | Confirm key is ready + whether embeddings are local (sentence-transformers) or API |
-| Demo drug / indication choice for the Safety agent | Module 9, Module 14 golden set | One drug + one indication with enough FAERS volume to be interesting |
-| API budget ceiling | Module 5 (embedding corpus size), Module 14 (eval run count) | A rough monthly USD cap |
+| Anthropic API key in `.env` | 5-13 | Copy `.env.example` to `.env`, add key |
+| Demo drug + indication | 8, 13 | One drug with enough FAERS volume |
+
+## Budget
+
+Sonnet 5, effort-tuned, Batch API for eval: **~$1.75 total** (target: under $5).

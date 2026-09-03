@@ -10,3 +10,7 @@ data/raw/
 data/index/
 *.faiss
 .DS_Store
+
+venv/
+.pytest_cache/
+.ruff_cache/

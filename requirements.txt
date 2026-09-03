@@ -1,0 +1,24 @@
+# Core
+anthropic>=1.0.0
+pydantic>=2.9.0
+python-dotenv>=1.0.0
+
+# Orchestration
+langgraph>=0.2.0
+
+# Knowledge base (Module 4)
+sentence-transformers>=3.0.0
+faiss-cpu>=1.8.0
+rank-bm25>=0.2.2
+
+# Data ingestion (Module 3)
+httpx>=0.27.0
+tenacity>=9.0.0
+pypdf>=5.0.0
+
+# UI (Module 11)
+streamlit>=1.39.0
+
+# Dev
+pytest>=8.3.0
+ruff>=0.7.0

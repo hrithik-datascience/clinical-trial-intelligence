@@ -21,6 +21,15 @@ def test_is_grounded_ignores_unicode_thin_space_differences():
     assert is_grounded(model_quote, source)
 
 
+def test_is_grounded_ignores_capitalization_of_a_sentence_start():
+    """Second real bug found running Module 6: the model capitalizes the
+    first letter of a mid-sentence fragment when presenting it as a
+    standalone quoted sentence. Content is identical; only case differs."""
+    source = "...and 5.7 months; the median PFS was 11.3 months in the group"
+    model_quote = "The median PFS was 11.3 months in the group"
+    assert is_grounded(model_quote, source)
+
+
 def test_is_grounded_rejects_a_fabricated_quote():
     assert not is_grounded("a phrase never in the source", "completely different text")
 

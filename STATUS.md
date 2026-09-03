@@ -15,7 +15,7 @@ A module is ✅ only if its code was actually run and the output inspected.
 | 4 | Knowledge Base | ❌ | — | — | — |
 | 5 | Protocol Agent | ✅ Working | 2026-09-03 | `pytest tests/test_protocol_agent_live.py -v -s` | Real NCT04280705, grounding check verified, 27/27 tests |
 | 6 | Evidence Agent | ✅ Working | 2026-09-03 | `pytest tests/test_evidence_agent_live.py -v -s` | Real PubMed query, 5 grounded claims, strength=limited; 34/34 tests |
-| 7 | Regulatory Agent | ❌ | — | — | — |
+| 7 | Regulatory Agent | ✅ Working | 2026-09-03 | `pytest tests/test_regulatory_agent_live.py -v -s` | Real ICH E9 clauses, 3 grounded findings on interim analysis/multiplicity; 41/41 tests |
 | 8 | Safety Agent | ❌ | — | — | — |
 | 9 | Supervisor Agent | ❌ | — | — | — |
 | 10 | Validation Layer | ❌ | — | — | — |

@@ -29,7 +29,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from src.agents.errors import GroundingError, is_grounded
 from src.ingest.ctgov import fetch_study
-from src.llm import EFFORT_EXTRACTION, get_client, model_name
+from src.llm import EFFORT_EXTRACTION, get_client, model_name, parse_with_retry
 from src.schemas import Citation, ExtractedField, FieldStatus, ProtocolExtraction, SourceType
 
 __all__ = ["GroundingError", "extract"]
@@ -133,7 +133,8 @@ def extract(nct_id: str) -> ProtocolExtraction:
     doc = fetch_study(nct_id)
     client = get_client()
 
-    response = client.messages.parse(
+    response = parse_with_retry(
+        client,
         model=model_name(),
         max_tokens=4000,
         output_config={"effort": EFFORT_EXTRACTION},

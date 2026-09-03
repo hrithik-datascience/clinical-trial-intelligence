@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from src.agents.errors import GroundingError, is_grounded
 from src.ingest.pubmed import search_and_fetch
-from src.llm import EFFORT_EXTRACTION, get_client, model_name
+from src.llm import EFFORT_EXTRACTION, get_client, model_name, parse_with_retry
 from src.schemas import Citation, Claim, EvidenceStrength, EvidenceSynthesis, RawDocument, SourceType
 
 
@@ -84,7 +84,8 @@ def synthesize(question: str, max_results: int = 5) -> EvidenceSynthesis:
         return EvidenceSynthesis(question=question, claims=[], strength=EvidenceStrength.NONE_FOUND)
 
     client = get_client()
-    response = client.messages.parse(
+    response = parse_with_retry(
+        client,
         model=model_name(),
         max_tokens=4000,
         output_config={"effort": EFFORT_EXTRACTION},

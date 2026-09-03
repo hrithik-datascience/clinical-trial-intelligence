@@ -13,7 +13,7 @@ A module is ✅ only if its code was actually run and the output inspected.
 | 2 | Architecture, Schemas & Repo Setup | ✅ Working | 2026-09-03 | `pytest tests/ -v` | 12/12 pass — HG-1..HG-4 enforced in Pydantic |
 | 3 | Data Ingestion | ✅ Working | 2026-09-03 | `python -m src.ingest.verify` | All 4 live sources OK; 21/21 tests |
 | 4 | Knowledge Base | ❌ | — | — | — |
-| 5 | Protocol Agent | ❌ | — | — | — |
+| 5 | Protocol Agent | ✅ Working | 2026-09-03 | `pytest tests/test_protocol_agent_live.py -v -s` | Real NCT04280705, grounding check verified, 27/27 tests |
 | 6 | Evidence Agent | ❌ | — | — | — |
 | 7 | Regulatory Agent | ❌ | — | — | — |
 | 8 | Safety Agent | ❌ | — | — | — |

@@ -155,3 +155,25 @@ def test_hg4_rejection_requires_a_reason():
                 decided_at=datetime(2026, 9, 3, 10, 15, 0),
             )
         )
+
+
+def test_hg4_edit_also_requires_a_reason():
+    """Module 11: an edited value can legitimately diverge from its
+    citation (reviewer domain knowledge, not a grounded extraction) — the
+    same accountability HG-2 requires of an uncited claim."""
+    with pytest.raises(ValidationError, match="reviewer_note"):
+        BriefingPacket(
+            **_packet(
+                human_decision=ReviewDecision.EDITED,
+                decided_at=datetime(2026, 9, 3, 10, 15, 0),
+            )
+        )
+
+    edited = BriefingPacket(
+        **_packet(
+            human_decision=ReviewDecision.EDITED,
+            decided_at=datetime(2026, 9, 3, 10, 15, 0),
+            reviewer_note="Corrected phase from Phase 2 to Phase 3 per the amendment I reviewed.",
+        )
+    )
+    assert edited.is_final is True

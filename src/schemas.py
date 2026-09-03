@@ -372,8 +372,15 @@ class BriefingPacket(BaseModel):
             raise ValueError("a human decision must carry decided_at (HG-5)")
         if not decided and self.decided_at is not None:
             raise ValueError("decided_at set while decision is still pending")
-        if self.human_decision is ReviewDecision.REJECTED and not self.reviewer_note:
-            raise ValueError("a rejection must carry a reviewer_note")
+        # Module 11: extended to EDITED as well as REJECTED. A human override
+        # of an agent's output is the one place in this system where a value
+        # can diverge from its citation on purpose (a reviewer's domain
+        # knowledge, not a grounded extraction) — exactly the kind of
+        # unverifiable claim every other hard gate in this project exists to
+        # require an explanation for. Un-explained edits are silent the same
+        # way an un-cited claim is.
+        if self.human_decision in (ReviewDecision.REJECTED, ReviewDecision.EDITED) and not self.reviewer_note:
+            raise ValueError(f"a {self.human_decision.value} decision must carry a reviewer_note")
         return self
 
 

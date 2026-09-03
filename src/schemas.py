@@ -347,6 +347,17 @@ class ReactionCount(BaseModel):
     count: int = Field(ge=0)
 
 
+class DrugLabel(BaseModel):
+    """The real FDA-approved label text used to determine known_label_risk
+    deterministically (Module 8) -- the model never makes this call."""
+
+    drug: str = Field(min_length=1)
+    brand_name: str = Field(min_length=1)
+    generic_name: str = Field(min_length=1)
+    reference_text: str = Field(min_length=1)  # boxed warning + warnings + adverse reactions
+    retrieved_date: date
+
+
 class FaersAggregation(BaseModel):
     drug: str = Field(min_length=1)
     total_reports: int = Field(ge=0)

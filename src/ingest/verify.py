@@ -58,6 +58,12 @@ def main() -> int:
     except (IngestError, NoDataFound) as exc:
         failures += 1
         _line("aggregation", "FAILED", str(exc)[:60])
+    try:
+        label = openfda.fetch_label(DEMO_DRUG)
+        _line("label", "OK", f"{label.brand_name} ({len(label.reference_text):,} chars)")
+    except (IngestError, NoDataFound) as exc:
+        failures += 1
+        _line("label", "FAILED", str(exc)[:60])
 
     # 3. PubMed
     print("\nPubMed E-utilities")

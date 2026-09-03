@@ -16,7 +16,7 @@ A module is ✅ only if its code was actually run and the output inspected.
 | 5 | Protocol Agent | ✅ Working | 2026-09-03 | `pytest tests/test_protocol_agent_live.py -v -s` | Real NCT04280705, grounding check verified, 27/27 tests |
 | 6 | Evidence Agent | ✅ Working | 2026-09-03 | `pytest tests/test_evidence_agent_live.py -v -s` | Real PubMed query, 5 grounded claims, strength=limited; 34/34 tests |
 | 7 | Regulatory Agent | ✅ Working | 2026-09-03 | `pytest tests/test_regulatory_agent_live.py -v -s` | Rewired onto Module 4's KB (was a keyword stopgap); real ICH E9 findings on interim analysis/multiplicity; 51/51 tests |
-| 8 | Safety Agent | ❌ | — | — | — |
+| 8 | Safety Agent | ✅ Working | 2026-09-03 | `pytest tests/test_safety_agent_live.py -v -s` | Real FAERS counts (pembrolizumab) + real FDA label check, known vs. unexpected signals distinguished; 59/59 tests |
 | 9 | Supervisor Agent | ❌ | — | — | — |
 | 10 | Validation Layer | ❌ | — | — | — |
 | 11 | Human Review Interface | ❌ | — | — | — |

@@ -21,6 +21,7 @@ from datetime import date
 
 from src.ingest.client import ApiClient, IngestError, NoDataFound
 from src.schemas import (
+    DrugLabel,
     FaersAggregation,
     RawDocument,
     ReactionCount,
@@ -29,7 +30,10 @@ from src.schemas import (
 
 BASE_URL = "https://api.fda.gov"
 EVENT_PATH = "/drug/event.json"
+LABEL_PATH = "/drug/label.json"
 REACTION_FIELD = "patient.reaction.reactionmeddrapt.exact"
+# Sections most likely to state a known/labeled risk, in priority order.
+_LABEL_SECTIONS = ("boxed_warning", "warnings", "warnings_and_cautions", "adverse_reactions")
 
 
 def _client() -> ApiClient:
@@ -83,6 +87,55 @@ def fetch_reaction_counts(drug: str, limit: int = 25) -> FaersAggregation:
         disclaimer=meta.get("disclaimer", ""),
         retrieved_date=date.today(),
     )
+
+
+def fetch_label(drug: str) -> DrugLabel:
+    """The real FDA-approved label for a drug, used by the Safety agent
+    (Module 8) to determine known_label_risk deterministically.
+
+    Prefers an exact openfda.generic_name match over a partial one. Verified
+    live against pembrolizumab: a partial match returns "KEYTRUDA QLEX" (a
+    newer pembrolizumab + berahyaluronidase combination product) ahead of
+    plain "KEYTRUDA" -- the wrong reference label for a plain-pembrolizumab
+    safety screen. Falls back to a partial match only if no exact one exists
+    (e.g. the input is a brand name, not a generic name).
+    """
+    with _client() as api:
+        payload = _label_search(api, f'openfda.generic_name.exact:"{drug.upper()}"')
+        if not payload.get("results"):
+            payload = _label_search(api, f'openfda.generic_name:"{drug}"')
+
+    results = payload.get("results", [])
+    if not results:
+        raise NoDataFound(f"no FDA label found for {drug!r}")
+
+    result = results[0]
+    ofda = result.get("openfda", {})
+    sections = [
+        para
+        for key in _LABEL_SECTIONS
+        for para in result.get(key, [])
+    ]
+    reference_text = "\n\n".join(sections)
+    if not reference_text:
+        raise NoDataFound(f"label found for {drug!r} but it has no warnings/adverse-reaction text")
+
+    return DrugLabel(
+        drug=drug,
+        brand_name=", ".join(ofda.get("brand_name", [])) or drug,
+        generic_name=", ".join(ofda.get("generic_name", [])) or drug,
+        reference_text=reference_text,
+        retrieved_date=date.today(),
+    )
+
+
+def _label_search(api: ApiClient, search: str) -> dict:
+    try:
+        return api.get_json(LABEL_PATH, params={"search": search, "limit": 1})
+    except IngestError as exc:
+        if "404" in str(exc):
+            return {}
+        raise
 
 
 def to_document(aggregation: FaersAggregation) -> RawDocument:

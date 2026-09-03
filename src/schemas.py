@@ -293,3 +293,45 @@ class BriefingPacket(BaseModel):
         if self.human_decision is ReviewDecision.REJECTED and not self.reviewer_note:
             raise ValueError("a rejection must carry a reviewer_note")
         return self
+
+
+# --------------------------------------------------------------------------
+# Ingestion (Module 3) — what the knowledge base consumes
+# --------------------------------------------------------------------------
+
+
+class RawDocument(BaseModel):
+    """One retrieved document, before chunking.
+
+    Every document carries its provenance tags so a single shared index can be
+    filtered per agent (Section D.2, step 1).
+    """
+
+    doc_id: str = Field(min_length=1)
+    source_type: SourceType
+    source_name: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+    url: str = Field(min_length=1)
+    retrieved_date: date
+    metadata: dict = Field(default_factory=dict)
+
+
+class ReactionCount(BaseModel):
+    """One FAERS reaction term with FDA's own server-side count.
+
+    The count comes from openFDA's `count` aggregation — neither this codebase
+    nor the model ever tallies safety reports by hand.
+    """
+
+    term: str = Field(min_length=1)
+    count: int = Field(ge=0)
+
+
+class FaersAggregation(BaseModel):
+    drug: str = Field(min_length=1)
+    total_reports: int = Field(ge=0)
+    reactions: list[ReactionCount]
+    last_updated: str  # openFDA meta.last_updated
+    disclaimer: str  # openFDA ships this on every response; keep it attached
+    retrieved_date: date

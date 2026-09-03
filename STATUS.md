@@ -11,7 +11,7 @@ A module is ✅ only if its code was actually run and the output inspected.
 |---|---|---|---|---|---|
 | 1 | Product & Problem Understanding | 📄 Done | 2026-09-03 | — | Framing, 4 use cases, 5 hard gates, success criteria |
 | 2 | Architecture, Schemas & Repo Setup | ✅ Working | 2026-09-03 | `pytest tests/ -v` | 12/12 pass — HG-1..HG-4 enforced in Pydantic |
-| 3 | Data Ingestion | ❌ | — | — | — |
+| 3 | Data Ingestion | ✅ Working | 2026-09-03 | `python -m src.ingest.verify` | All 4 live sources OK; 21/21 tests |
 | 4 | Knowledge Base | ❌ | — | — | — |
 | 5 | Protocol Agent | ❌ | — | — | — |
 | 6 | Evidence Agent | ❌ | — | — | — |

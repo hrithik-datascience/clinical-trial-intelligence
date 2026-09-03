@@ -1,4 +1,5 @@
-"""Live Regulatory Agent test — real ICH E9 text + real API call.
+"""Live Regulatory Agent test — real ICH E9 text via the shared knowledge
+base (Module 4) + real API call.
 
 Skipped unless ANTHROPIC_API_KEY is set. Run explicitly:
     venv/Scripts/python.exe -m pytest tests/test_regulatory_agent_live.py -v -s
@@ -9,6 +10,8 @@ import os
 import pytest
 
 from src.agents.regulatory import review
+from src.ingest import guidance
+from src.kb.store import KnowledgeBase
 from src.schemas import Severity
 
 pytestmark = pytest.mark.skipif(
@@ -25,8 +28,18 @@ summary. Two secondary endpoints (mortality, clinical status at day 15) are
 also assessed without a stated multiplicity correction method."""
 
 
-def test_review_grounds_every_finding_in_a_real_clause():
-    findings = review(PROTOCOL_SUMMARY, guidance_name="ICH_E9", top_k=6)
+@pytest.fixture(scope="module")
+def guidance_kb() -> KnowledgeBase:
+    """A guidance-only KB, built from the real ICH E9 / FDA E9(R1) PDFs --
+    smaller and faster than the full four-source Module 4 build, but real
+    text end to end, not a fixture."""
+    kb = KnowledgeBase()
+    kb.add_documents(guidance.fetch_all())
+    return kb
+
+
+def test_review_grounds_every_finding_in_a_real_clause(guidance_kb: KnowledgeBase):
+    findings = review(PROTOCOL_SUMMARY, guidance_kb, top_k=6)
 
     assert len(findings) > 0
     for finding in findings:
@@ -40,13 +53,13 @@ def test_review_grounds_every_finding_in_a_real_clause():
             assert banned not in lowered
 
 
-def test_review_returns_empty_for_an_unrelated_summary():
+def test_review_returns_empty_for_an_unrelated_summary(guidance_kb: KnowledgeBase):
     findings = review(
         "A retrospective chart review of manufacturing cold-chain logistics "
         "for vaccine distribution in rural clinics.",
-        guidance_name="ICH_E9",
+        guidance_kb,
         top_k=6,
     )
     # Not asserting == [] strictly (the model may find a tenuous link), but
-    # this should be small — a sanity check the selector isn't forcing noise.
+    # this should be small — a sanity check retrieval isn't forcing noise.
     assert len(findings) <= 2

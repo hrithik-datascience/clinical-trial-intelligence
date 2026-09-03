@@ -317,6 +317,25 @@ class RawDocument(BaseModel):
     metadata: dict = Field(default_factory=dict)
 
 
+class Chunk(BaseModel):
+    """One indexed unit in the shared knowledge base (Module 4).
+
+    chunk_id is the identifier Citation.chunk_id points back to, so the two
+    must stay in the same format an agent used before the KB existed (e.g.
+    "guidance:ICH_E9:4.5") — the Validation layer resolves one against the
+    other.
+    """
+
+    chunk_id: str = Field(min_length=1)
+    doc_id: str = Field(min_length=1)
+    source_type: SourceType
+    source_name: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+    retrieved_date: date
+    metadata: dict = Field(default_factory=dict)
+
+
 class ReactionCount(BaseModel):
     """One FAERS reaction term with FDA's own server-side count.
 

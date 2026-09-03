@@ -12,10 +12,10 @@ A module is ✅ only if its code was actually run and the output inspected.
 | 1 | Product & Problem Understanding | 📄 Done | 2026-09-03 | — | Framing, 4 use cases, 5 hard gates, success criteria |
 | 2 | Architecture, Schemas & Repo Setup | ✅ Working | 2026-09-03 | `pytest tests/ -v` | 12/12 pass — HG-1..HG-4 enforced in Pydantic |
 | 3 | Data Ingestion | ✅ Working | 2026-09-03 | `python -m src.ingest.verify` | All 4 live sources OK; 21/21 tests |
-| 4 | Knowledge Base | ❌ | — | — | — |
+| 4 | Knowledge Base | ✅ Working | 2026-09-03 | `python -m src.kb.build` | 14 real docs -> 116 chunks; hybrid (FAISS+BM25) search; 5/5 sample queries relevant; 51/51 tests |
 | 5 | Protocol Agent | ✅ Working | 2026-09-03 | `pytest tests/test_protocol_agent_live.py -v -s` | Real NCT04280705, grounding check verified, 27/27 tests |
 | 6 | Evidence Agent | ✅ Working | 2026-09-03 | `pytest tests/test_evidence_agent_live.py -v -s` | Real PubMed query, 5 grounded claims, strength=limited; 34/34 tests |
-| 7 | Regulatory Agent | ✅ Working | 2026-09-03 | `pytest tests/test_regulatory_agent_live.py -v -s` | Real ICH E9 clauses, 3 grounded findings on interim analysis/multiplicity; 41/41 tests |
+| 7 | Regulatory Agent | ✅ Working | 2026-09-03 | `pytest tests/test_regulatory_agent_live.py -v -s` | Rewired onto Module 4's KB (was a keyword stopgap); real ICH E9 findings on interim analysis/multiplicity; 51/51 tests |
 | 8 | Safety Agent | ❌ | — | — | — |
 | 9 | Supervisor Agent | ❌ | — | — | — |
 | 10 | Validation Layer | ❌ | — | — | — |
@@ -32,8 +32,7 @@ A module is ✅ only if its code was actually run and the output inspected.
 
 | Blocker | Blocks | Needed |
 |---|---|---|
-| Anthropic API key in `.env` | 5-13 | Copy `.env.example` to `.env`, add key |
-| Demo drug + indication | 8, 13 | One drug with enough FAERS volume |
+| Demo drug + indication | 8, 13 | One drug with enough FAERS volume (placeholder `pembrolizumab` in use, A-06) |
 
 ## Budget
 

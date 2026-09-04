@@ -84,6 +84,19 @@ status="not_specified" with value=null and quoted_text=null. Do NOT guess, \
 infer from context, or use general medical knowledge to fill a gap.
 3. Never paraphrase a quote to make it fit — if you cannot find an exact \
 substring, the field is not_specified.
+4. If the "Phase:" line literally reads "NA", that IS the real value — \
+extract it as status="extracted", value="NA". "NA" is a genuine registry \
+designation (used for device/behavioral trials with no drug-development \
+phase), not a sign the field is empty. Do not confuse the field being \
+present-but-valued-NA with the field being absent.
+5. population means an explicit statement of who the study enrolls, \
+presented as such in the source text (e.g. a dedicated population/study-\
+population description). The trial's title or its condition/disease name \
+is NOT a population statement — a title like "...in Women With Breast \
+Cancer" describes what the trial is about, not a stated population field. \
+If you cannot find population described as its own statement, it is \
+not_specified, even if the title or eligibility criteria imply who is \
+likely enrolled.
 
 A missing field reported honestly is correct behaviour. A plausible-sounding \
 guess is the single worst thing you can do here."""

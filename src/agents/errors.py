@@ -24,6 +24,20 @@ Neither fix weakens the check against actual fabrication -- an invented
 quote does not become real by collapsing its spaces or its case -- they only
 stop penalizing the model for presentational normalization no LLM reliably
 avoids when asked to quote a "sentence" out of running text.
+
+DEVIATION FROM PLAN, found running Module 13's evaluation harness against a
+wider golden set than any single agent module had exercised before:
+GroundingError on real ClinicalTrials.gov eligibility text quoting
+"PEFR \\> 50%". ClinicalTrials.gov's API returns "<" and ">" inside
+eligibility criteria text as literal backslash-escaped Markdown ("\\<",
+"\\>") -- verified across four real trials, present in 2 of 4, including
+NCT04280705, this project's very first example, which had simply never
+happened to trigger it before. The model naturally reads "\\>" as ">" and
+quotes it unescaped -- semantically identical content, byte-for-byte
+different. Fixed by stripping the backslash immediately before "<" or ">"
+before comparing, the same principle as the whitespace/case fixes: this
+only forgives a presentational escaping artifact, verified it still rejects
+a genuinely different quote.
 """
 
 from __future__ import annotations
@@ -31,9 +45,11 @@ from __future__ import annotations
 import re
 
 _WHITESPACE = re.compile(r"\s+")
+_ESCAPED_ANGLE_BRACKET = re.compile(r"\\([<>])")
 
 
 def _normalize(text: str) -> str:
+    text = _ESCAPED_ANGLE_BRACKET.sub(r"\1", text)
     return _WHITESPACE.sub(" ", text).strip().casefold()
 
 

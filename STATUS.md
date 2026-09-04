@@ -21,7 +21,7 @@ A module is ✅ only if its code was actually run and the output inspected.
 | 10 | Validation Layer | ✅ Working | 2026-09-03 | `python -m src.pipeline` | Real packet: confidence 0.944 decomposed, 17 citations checked, 1 real cross-agent flag caught; 109/109 tests |
 | 11 | Human Review Interface | ✅ Working | 2026-09-04 | `streamlit run src/ui/app.py` | Real dev server (HTTP 200), real approve/edit/reject flow, 1 live end-to-end pass; 141/141 tests |
 | 12 | Audit Log & Observability | ✅ Working | 2026-09-04 | `python -c "from src import audit; ..."` | Real append-only log, 89 real events this session, real cost $0.24/14 calls; 154/154 tests |
-| 13 | Evaluation Harness | ❌ | — | — | — |
+| 13 | Evaluation Harness | ✅ Working | 2026-09-04 | `python -m src.eval.harness` | Real golden set (18 examples); Protocol P/R 1.0/1.0 after fixes; Safety agreement 1.0; 3 real bugs found, 2 fixed; 167/167 tests |
 | 14 | Containerization & CI/CD | ❌ | — | — | — |
 | 15 | Documentation & Demo Packaging | ❌ | — | — | — |
 | 16 | Cloud Architecture & Responsible AI | ❌ | — | — | — |

@@ -34,6 +34,23 @@ def test_is_grounded_rejects_a_fabricated_quote():
     assert not is_grounded("a phrase never in the source", "completely different text")
 
 
+def test_is_grounded_ignores_markdown_escaped_angle_brackets():
+    """Real bug found running Module 13's evaluation harness: ClinicalTrials.gov's
+    API returns eligibility text with literal backslash-escaped '<'/'>'
+    ("PEFR \\> 50%"), verified present in real NCT00413387 and NCT04280705
+    text. The model naturally quotes it unescaped -- identical content."""
+    source = "FEV1 or PEFR \\> 50% and \\< 80% of the predicted normal"
+    model_quote = "FEV1 or PEFR > 50% and < 80% of the predicted normal"
+    assert is_grounded(model_quote, source)
+
+
+def test_is_grounded_still_rejects_a_genuinely_different_number_near_a_bracket():
+    """The escape fix must not become permissive about content, only about
+    the backslash presentation artifact."""
+    source = "PEFR \\> 50% of the predicted normal"
+    assert not is_grounded("PEFR > 90% of the predicted normal", source)
+
+
 def test_llm_synthesis_none_found_cannot_carry_claims():
     with pytest.raises(ValidationError):
         _LlmSynthesis(

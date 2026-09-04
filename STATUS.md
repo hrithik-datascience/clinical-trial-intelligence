@@ -21,12 +21,12 @@ A module is ✅ only if its code was actually run and the output inspected.
 | 10 | Validation Layer | ✅ Working | 2026-09-03 | `python -m src.pipeline` | Real packet: confidence 0.944 decomposed, 17 citations checked, 1 real cross-agent flag caught; 109/109 tests |
 | 11 | Human Review Interface | ✅ Working | 2026-09-04 | `streamlit run src/ui/app.py` | Real dev server (HTTP 200), real approve/edit/reject flow, 1 live end-to-end pass; 141/141 tests |
 | 12 | Audit Log & Observability | ✅ Working | 2026-09-04 | `python -c "from src import audit; ..."` | Real append-only log, 89 real events this session, real cost $0.24/14 calls; 154/154 tests |
-| 13 | Evaluation Harness | ✅ Working | 2026-09-04 | `python -m src.eval.harness` | Real golden set (18 examples); Protocol P/R 1.0/1.0 after fixes; Safety agreement 1.0; 3 real bugs found, 2 fixed; 167/167 tests |
+| 13 | Evaluation Harness | ✅ Working | 2026-09-04 | `python -m src.eval.harness` | Real golden set (18 examples, user-confirmed acceptable 2026-09-04); Protocol P/R 1.0/1.0 after fixes; Safety agreement 1.0; 3 real bugs found, 2 fixed; 167/167 tests |
 | 14 | Containerization & CI/CD | ⚠️ Partial | 2026-09-04 | `docker build -t clinical-trial-intelligence:test .` | Dockerfile, docker-compose, GitHub Actions CI, ruff lint config all written; lint passes (0 issues) and 166/167 tests pass locally; **Docker build itself unverified** — failed with "no space left on device" (host C: drive at 0 bytes free / Docker Desktop unable to start), not a code issue. Skipped by user pending disk space. |
 | 15 | Documentation & Demo Packaging | ✅ Working | 2026-09-04 | — | Root `README.md` + `docs/DEMO_SCRIPT.md` written; every command cross-checked against a real file; Module 14 represented honestly as unverified, not hidden |
-| 16 | Cloud Architecture & Responsible AI | ❌ | — | — | — |
-| 17 | Metrics Rollup & STAR Narrative | ❌ | — | — | — |
-| 18 | Mock Defense | ❌ | — | — | — |
+| 16 | Cloud Architecture & Responsible AI | 📄 Done | 2026-09-04 | — | Design-only (THEORETICAL, Section H) — AWS mapping table (ECS Fargate/OpenSearch/DynamoDB/S3/Secrets Manager/CloudWatch/EventBridge, D-08/D-09/D-10) + model-card-style Responsible AI summary. No deployment, no AWS spend. |
+| 17 | Metrics Rollup & STAR Narrative | ✅ Working | 2026-09-04 | — | `docs/METRICS_ROLLUP.md` + `docs/STAR_NARRATIVE.md` — every bullet traced to an already-logged real number; weak numbers (Regulatory 0.50) named with root cause, not hidden |
+| 18 | Mock Defense | ✅ Working | 2026-09-04 | — | `docs/MOCK_DEFENSE.md` — 16 questions, beginner→advanced, every answer sourced to a real number or logged decision (redirected from live interrogation to a study guide per user instruction) |
 
 ## Blockers
 

@@ -108,7 +108,8 @@ A step-by-step walkthrough of all four use cases is in
 
 1. Public registry listings aren't real draft protocols — extraction accuracy won't fully transfer.
 2. FAERS shows reported associations only, never causality — enforced in code (HG-3), not just prose.
-3. The golden set (18 examples) is developer-hand-labeled, not yet confirmed by an independent reviewer.
+3. The golden set (18 examples) is developer-hand-labeled; the user confirmed the reported results
+   acceptable (2026-09-04), but no independent clinical/regulatory reviewer has checked the labels.
 4. `cost_usd` in the audit log is a placeholder price conversion applied to real, measured token counts.
 5. Not deployed, not containerized end-to-end (yet), not validated for any real clinical or
    regulatory decision — at no point does this project claim otherwise.

@@ -109,7 +109,7 @@ def _build_prompt(drug: str, entries: list[dict]) -> str:
     return f"Drug: {drug}\n\nReported reactions:\n{listing}"
 
 
-def screen(drug: str, top_n: int = 10) -> SafetyScreen:
+def screen(drug: str, top_n: int = 10, run_id: str | None = None) -> SafetyScreen:
     """Real FAERS counts + a real label check + a model-written narrative per
     association.
 
@@ -117,7 +117,8 @@ def screen(drug: str, top_n: int = 10) -> SafetyScreen:
     the drug, or if no FDA label exists for it. Raises ValueError if the
     model omits a narrative for a supplied reaction -- every reaction has
     real data behind it, so a missing narrative is a bug to surface, not a
-    gap to paper over.
+    gap to paper over. run_id correlates this call in the audit log
+    (Module 12) with its Supervisor run; omit it outside one.
     """
     agg = fetch_reaction_counts(drug, limit=top_n)
     label = fetch_label(drug)
@@ -130,6 +131,8 @@ def screen(drug: str, top_n: int = 10) -> SafetyScreen:
     client = get_client()
     response = parse_with_retry(
         client,
+        agent="safety",
+        run_id=run_id,
         model=model_name(),
         max_tokens=4000,
         output_config={"effort": EFFORT_EXTRACTION},

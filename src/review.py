@@ -23,7 +23,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from src.schemas import BriefingPacket, FieldStatus, ReviewDecision
+from src import audit
+from src.schemas import AuditEventType, BriefingPacket, FieldStatus, ReviewDecision
 
 PROTOCOL_FIELD_NAMES = (
     "phase", "population", "primary_endpoint",
@@ -88,4 +89,11 @@ def decide(
     working = apply_edits(packet, field_edits or {})
     data = working.model_dump()
     data.update(human_decision=decision, reviewer_note=reviewer_note, decided_at=datetime.now())
-    return BriefingPacket(**data)
+    final_packet = BriefingPacket(**data)
+
+    # Module 12: the audit trail's HUMAN_DECISION record. Logged only after
+    # BriefingPacket(**data) has already succeeded, so an un-explained
+    # rejection or edit (HG-4) never reaches the log at all -- it never
+    # became a real decision in the first place.
+    audit.log_event(final_packet.run_id, AuditEventType.HUMAN_DECISION, final_packet)
+    return final_packet

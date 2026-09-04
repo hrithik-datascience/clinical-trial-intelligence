@@ -119,13 +119,16 @@ def _build_prompt(protocol_summary: str, clauses: dict[str, tuple[str, str]]) ->
     )
 
 
-def review(protocol_summary: str, kb: KnowledgeBase, top_k: int = 6) -> list[RegulatoryFinding]:
+def review(
+    protocol_summary: str, kb: KnowledgeBase, top_k: int = 6, run_id: str | None = None
+) -> list[RegulatoryFinding]:
     """Review a protocol summary against the guidance subset of the shared
     knowledge base.
 
     Raises GroundingError if the model cites a clause_id we didn't supply, or
     a quote that isn't a literal (whitespace/case-normalized) substring of
-    that clause's actual text.
+    that clause's actual text. run_id correlates this call in the audit log
+    (Module 12) with its Supervisor run; omit it outside one.
     """
     results = kb.search(protocol_summary, top_k=top_k, source_type=SourceType.GUIDANCE)
     if not results:
@@ -140,6 +143,13 @@ def review(protocol_summary: str, kb: KnowledgeBase, top_k: int = 6) -> list[Reg
     client = get_client()
     response = parse_with_retry(
         client,
+        agent="regulatory",
+        run_id=run_id,
+        # The one agent that retrieves from the shared KB -- Module 12's
+        # observability requirement for "retrieved chunks" applies to it
+        # specifically, since the other three agents fetch live and have no
+        # retrieval step to report.
+        retrieved_chunk_ids=[r.chunk.chunk_id for r in results],
         model=model_name(),
         # Truncation observed in Module 7's first live run at max_tokens=4000
         # under effort=high with several multi-clause findings. Raised to 8000.

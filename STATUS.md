@@ -20,7 +20,7 @@ A module is ✅ only if its code was actually run and the output inspected.
 | 9 | Supervisor Agent | ✅ Working | 2026-09-03 | `pytest tests/test_supervisor_live.py -v -s` | Real intent routing + LangGraph graph; 3-agent run, 0 failures; parallelism measured; 84/84 tests |
 | 10 | Validation Layer | ✅ Working | 2026-09-03 | `python -m src.pipeline` | Real packet: confidence 0.944 decomposed, 17 citations checked, 1 real cross-agent flag caught; 109/109 tests |
 | 11 | Human Review Interface | ✅ Working | 2026-09-04 | `streamlit run src/ui/app.py` | Real dev server (HTTP 200), real approve/edit/reject flow, 1 live end-to-end pass; 141/141 tests |
-| 12 | Audit Log & Observability | ❌ | — | — | — |
+| 12 | Audit Log & Observability | ✅ Working | 2026-09-04 | `python -c "from src import audit; ..."` | Real append-only log, 89 real events this session, real cost $0.24/14 calls; 154/154 tests |
 | 13 | Evaluation Harness | ❌ | — | — | — |
 | 14 | Containerization & CI/CD | ❌ | — | — | — |
 | 15 | Documentation & Demo Packaging | ❌ | — | — | — |
@@ -36,4 +36,7 @@ A module is ✅ only if its code was actually run and the output inspected.
 
 ## Budget
 
-Sonnet 5, effort-tuned, Batch API for eval: **~$1.75 total** (target: under $5).
+Sonnet 5, effort-tuned. Was estimated at ~$1.75 total (never measured); Module 12 now logs every
+real call's actual token usage and a placeholder-priced cost (A-09) to `data/audit/audit_log.jsonl`.
+Real total so far this session: **$0.24 across 14 real LLM calls** (38,131 input + 8,491 output
+tokens). Target: under $5.

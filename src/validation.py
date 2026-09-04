@@ -30,9 +30,11 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from src import audit
 from src.kb.store import KnowledgeBase
 from src.schemas import (
     AgentName,
+    AuditEventType,
     BriefingPacket,
     Citation,
     FlagType,
@@ -290,7 +292,7 @@ def validate(run: SupervisorRun, kb: KnowledgeBase | None = None) -> BriefingPac
             )
         )
 
-    return BriefingPacket(
+    packet = BriefingPacket(
         run_id=run.run_id,
         query=run.query,
         created_at=run.created_at or datetime.now(),
@@ -301,3 +303,9 @@ def validate(run: SupervisorRun, kb: KnowledgeBase | None = None) -> BriefingPac
         validation_flags=flags,
         overall_confidence=breakdown.score,
     )
+    # Module 12: the whole validated packet is the audit record, not a
+    # separate flag-count summary -- an auditor reading VALIDATION_RESULT
+    # should see exactly what the reviewer will see (Module 11), not a
+    # smaller reconstruction of it.
+    audit.log_event(run.run_id, AuditEventType.VALIDATION_RESULT, packet)
+    return packet

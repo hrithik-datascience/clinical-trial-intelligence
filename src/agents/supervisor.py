@@ -38,6 +38,7 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
+from src import audit
 from src.agents import evidence, protocol, regulatory, safety
 from src.kb.build import KB_DIR
 from src.kb.store import KnowledgeBase
@@ -45,6 +46,7 @@ from src.llm import EFFORT_ROUTING, get_client, model_name, parse_with_retry
 from src.schemas import (
     AgentFailure,
     AgentName,
+    AuditEventType,
     FieldStatus,
     ProtocolExtraction,
     RoutingDecision,
@@ -145,10 +147,14 @@ broad request ("review this trial") legitimately needs several.
 3. If the request calls for none of them, return an empty list and say so."""
 
 
-def _llm_route(query: str, runnable: list[AgentName]) -> tuple[list[AgentName], str]:
+def _llm_route(
+    query: str, runnable: list[AgentName], run_id: str | None = None
+) -> tuple[list[AgentName], str]:
     listing = ", ".join(a.value for a in runnable)
     response = parse_with_retry(
         get_client(),
+        agent="supervisor_router",
+        run_id=run_id,
         model=model_name(),
         max_tokens=1000,
         output_config={"effort": EFFORT_ROUTING},
@@ -196,12 +202,15 @@ def close_dependencies(
 
 
 def route(
-    request: SupervisorRequest, agents: list[AgentName] | None = None
+    request: SupervisorRequest,
+    agents: list[AgentName] | None = None,
+    run_id: str | None = None,
 ) -> RoutingDecision:
     """Decide which agents to run.
 
     `agents` short-circuits the model call entirely — used by the UI and by
     tests that shouldn't spend an API call to exercise orchestration.
+    run_id correlates the router's own LLM call in the audit log (Module 12).
     """
     runnable, blocked = capability_gate(request)
 
@@ -216,7 +225,7 @@ def route(
         )
 
     try:
-        selected, rationale = _llm_route(request.query, runnable)
+        selected, rationale = _llm_route(request.query, runnable, run_id=run_id)
     except Exception as exc:  # router unavailable — fall OPEN, never closed
         return RoutingDecision(
             selected=runnable,
@@ -244,6 +253,7 @@ def route(
 
 class _State(TypedDict):
     request: SupervisorRequest
+    run_id: str
     selected: list[AgentName]
     kb: KnowledgeBase | None
     protocol: ProtocolExtraction | None
@@ -291,7 +301,7 @@ def summary_for_regulatory(extraction: ProtocolExtraction) -> str:
 
 def _node_protocol(state: _State) -> dict:
     try:
-        return {"protocol": protocol.extract(state["request"].resolved_nct_id())}
+        return {"protocol": protocol.extract(state["request"].resolved_nct_id(), run_id=state["run_id"])}
     except Exception as exc:
         return {"failures": [_failure(AgentName.PROTOCOL, exc)]}
 
@@ -299,14 +309,14 @@ def _node_protocol(state: _State) -> dict:
 def _node_evidence(state: _State) -> dict:
     request = state["request"]
     try:
-        return {"evidence": evidence.synthesize(request.question or request.query)}
+        return {"evidence": evidence.synthesize(request.question or request.query, run_id=state["run_id"])}
     except Exception as exc:
         return {"failures": [_failure(AgentName.EVIDENCE, exc)]}
 
 
 def _node_safety(state: _State) -> dict:
     try:
-        return {"safety": safety.screen(state["request"].drug)}
+        return {"safety": safety.screen(state["request"].drug, run_id=state["run_id"])}
     except Exception as exc:
         return {"failures": [_failure(AgentName.SAFETY, exc)]}
 
@@ -332,7 +342,7 @@ def _node_regulatory(state: _State) -> dict:
 
     try:
         kb = state["kb"] or _load_kb()
-        return {"regulatory": regulatory.review(summary, kb)}
+        return {"regulatory": regulatory.review(summary, kb, run_id=state["run_id"])}
     except Exception as exc:
         return {"failures": [_failure(AgentName.REGULATORY, exc)]}
 
@@ -414,13 +424,23 @@ def run(
 
     Does not raise when an agent fails — see T-20. Check `failures` on the
     result; a run with failures is incomplete, never a finished answer.
+
+    run_id is generated here, first, rather than after the run completes
+    (as it was before Module 12) — every LLM call and audit event inside
+    this run needs it to correlate back, so it has to exist before any of
+    them do.
     """
+    run_id = f"run-{uuid.uuid4().hex[:12]}"
     started = time.monotonic()
-    decision = route(request, agents=agents)
+
+    audit.log_event(run_id, AuditEventType.QUERY_RECEIVED, request)
+    decision = route(request, agents=agents, run_id=run_id)
+    audit.log_event(run_id, AuditEventType.ROUTING_DECISION, decision)
 
     final = _compiled().invoke(
         {
             "request": request,
+            "run_id": run_id,
             "selected": decision.selected,
             "kb": kb,
             "protocol": None,
@@ -431,8 +451,8 @@ def run(
         }
     )
 
-    return SupervisorRun(
-        run_id=f"run-{uuid.uuid4().hex[:12]}",
+    supervisor_run = SupervisorRun(
+        run_id=run_id,
         query=request.query,
         created_at=datetime.now(),
         routing=decision,
@@ -443,3 +463,5 @@ def run(
         failures=final.get("failures") or [],
         elapsed_seconds=round(time.monotonic() - started, 2),
     )
+    audit.log_event(run_id, AuditEventType.RUN_COMPLETED, supervisor_run)
+    return supervisor_run

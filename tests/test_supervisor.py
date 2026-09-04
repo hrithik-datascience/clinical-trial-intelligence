@@ -163,10 +163,10 @@ def test_one_agent_failing_does_not_stop_the_others(monkeypatch):
     from src.agents import protocol as protocol_mod
     from src.schemas import EvidenceStrength, EvidenceSynthesis
 
-    def boom(nct_id):
+    def boom(nct_id, run_id=None):
         raise RuntimeError("registry exploded")
 
-    def fake_synthesize(question, max_results=5):
+    def fake_synthesize(question, max_results=5, run_id=None):
         return EvidenceSynthesis(question=question, claims=[], strength=EvidenceStrength.NONE_FOUND)
 
     monkeypatch.setattr(protocol_mod, "extract", boom)
@@ -189,7 +189,7 @@ def test_regulatory_records_missing_input_when_the_protocol_agent_fails(monkeypa
     Regulatory must say so, not be silently skipped."""
     from src.agents import protocol as protocol_mod
 
-    monkeypatch.setattr(protocol_mod, "extract", lambda nct_id: (_ for _ in ()).throw(RuntimeError("no record")))
+    monkeypatch.setattr(protocol_mod, "extract", lambda nct_id, run_id=None: (_ for _ in ()).throw(RuntimeError("no record")))
 
     result = run(
         SupervisorRequest(query="review NCT04280705"),
@@ -232,9 +232,9 @@ def test_regulatory_runs_exactly_once_when_reachable_by_both_paths(monkeypatch):
 
     calls = []
 
-    monkeypatch.setattr(protocol_mod, "extract", lambda nct_id: _extraction())
+    monkeypatch.setattr(protocol_mod, "extract", lambda nct_id, run_id=None: _extraction())
 
-    def counting_review(summary, kb, top_k=6):
+    def counting_review(summary, kb, top_k=6, run_id=None):
         calls.append(summary)
         return []
 
@@ -262,11 +262,11 @@ def test_independent_agents_actually_run_in_parallel(monkeypatch):
     from src.agents import safety as safety_mod
     from src.schemas import EvidenceStrength, EvidenceSynthesis, SafetyScreen
 
-    def slow_evidence(question, max_results=5):
+    def slow_evidence(question, max_results=5, run_id=None):
         time.sleep(0.5)
         return EvidenceSynthesis(question=question, claims=[], strength=EvidenceStrength.NONE_FOUND)
 
-    def slow_safety(drug, top_n=10):
+    def slow_safety(drug, top_n=10, run_id=None):
         time.sleep(0.5)
         return SafetyScreen(drug=drug, associations=[], total_reports_reviewed=0)
 

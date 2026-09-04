@@ -333,6 +333,58 @@ class SupervisorRun(BaseModel):
 
 
 # --------------------------------------------------------------------------
+# Audit Log & Observability (Module 12)
+# --------------------------------------------------------------------------
+
+
+class AuditEventType(str, Enum):
+    QUERY_RECEIVED = "query_received"
+    ROUTING_DECISION = "routing_decision"
+    LLM_CALL = "llm_call"
+    RUN_COMPLETED = "run_completed"
+    VALIDATION_RESULT = "validation_result"
+    HUMAN_DECISION = "human_decision"
+
+
+class LLMCallRecord(BaseModel):
+    """One real LLM call (T-23). latency_s and both token counts come
+    straight off the API response's own `usage` field — never estimated.
+
+    cost_usd is the one derived, non-measured field here: no verified public
+    price sheet exists in this project for this model, so it is computed
+    from a placeholder price table (ASSUMPTION A-09) and must never be
+    quoted as a billing-accurate number, only a relative cost signal.
+    """
+
+    agent: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    model: str = Field(min_length=1)
+    effort: str = Field(min_length=1)
+    latency_s: float = Field(ge=0.0)
+    input_tokens: int = Field(ge=0)
+    output_tokens: int = Field(ge=0)
+    cost_usd: float = Field(ge=0.0)
+    retrieved_chunk_ids: list[str] = Field(default_factory=list)
+    input_preview: str = ""
+    output_preview: str = ""
+
+
+class AuditEvent(BaseModel):
+    """One append-only log line. `payload` is a plain dict (the emitting
+    caller's own typed model, dumped) rather than a discriminated union, so
+    the log format never needs to change shape when a new event type is
+    added — the type safety lives at the point each event is constructed,
+    not in this envelope.
+    """
+
+    event_id: str = Field(min_length=1)
+    event_type: AuditEventType
+    run_id: str = Field(min_length=1)
+    timestamp: datetime
+    payload: dict = Field(default_factory=dict)
+
+
+# --------------------------------------------------------------------------
 # The packet the reviewer sees — HG-4
 # --------------------------------------------------------------------------
 

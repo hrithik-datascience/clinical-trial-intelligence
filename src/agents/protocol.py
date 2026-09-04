@@ -126,19 +126,23 @@ def _to_extracted_field(
     return ExtractedField(value=llm_field.value, status=FieldStatus.EXTRACTED, citation=citation)
 
 
-def extract(nct_id: str) -> ProtocolExtraction:
+def extract(nct_id: str, run_id: str | None = None) -> ProtocolExtraction:
     """Fetch a study and extract its structured fields.
 
     Raises NoDataFound (from ctgov) if the registry has no such study, and
     GroundingError if the model's response cannot be reconciled with the
     source document. Neither is caught here — the caller decides how to
-    surface a failed extraction.
+    surface a failed extraction. run_id correlates this call in the audit
+    log (Module 12) with the Supervisor run it belongs to; omit it when
+    calling this directly outside a run.
     """
     doc = fetch_study(nct_id)
     client = get_client()
 
     response = parse_with_retry(
         client,
+        agent="protocol",
+        run_id=run_id,
         model=model_name(),
         max_tokens=4000,
         output_config={"effort": EFFORT_EXTRACTION},

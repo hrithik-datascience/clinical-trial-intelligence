@@ -8,6 +8,7 @@ __pycache__/
 .ipynb_checkpoints/
 data/raw/
 data/index/
+data/audit/
 *.faiss
 .DS_Store
 

@@ -71,11 +71,12 @@ def _build_prompt(question: str, docs: list[RawDocument]) -> str:
     return f"Question: {question}\n\nRetrieved documents:\n\n{listing}"
 
 
-def synthesize(question: str, max_results: int = 5) -> EvidenceSynthesis:
+def synthesize(question: str, max_results: int = 5, run_id: str | None = None) -> EvidenceSynthesis:
     """Search PubMed and synthesize a cited answer.
 
     Raises GroundingError if any claim's quote is not a literal substring of
-    the document it claims to be drawn from.
+    the document it claims to be drawn from. run_id correlates this call in
+    the audit log (Module 12) with its Supervisor run; omit it outside one.
     """
     docs = search_and_fetch(question, max_results=max_results)
     docs_with_abstracts = [d for d in docs if d.metadata.get("has_abstract")]
@@ -86,6 +87,8 @@ def synthesize(question: str, max_results: int = 5) -> EvidenceSynthesis:
     client = get_client()
     response = parse_with_retry(
         client,
+        agent="evidence",
+        run_id=run_id,
         model=model_name(),
         max_tokens=4000,
         output_config={"effort": EFFORT_EXTRACTION},

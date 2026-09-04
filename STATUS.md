@@ -22,8 +22,8 @@ A module is ✅ only if its code was actually run and the output inspected.
 | 11 | Human Review Interface | ✅ Working | 2026-09-04 | `streamlit run src/ui/app.py` | Real dev server (HTTP 200), real approve/edit/reject flow, 1 live end-to-end pass; 141/141 tests |
 | 12 | Audit Log & Observability | ✅ Working | 2026-09-04 | `python -c "from src import audit; ..."` | Real append-only log, 89 real events this session, real cost $0.24/14 calls; 154/154 tests |
 | 13 | Evaluation Harness | ✅ Working | 2026-09-04 | `python -m src.eval.harness` | Real golden set (18 examples); Protocol P/R 1.0/1.0 after fixes; Safety agreement 1.0; 3 real bugs found, 2 fixed; 167/167 tests |
-| 14 | Containerization & CI/CD | ❌ | — | — | — |
-| 15 | Documentation & Demo Packaging | ❌ | — | — | — |
+| 14 | Containerization & CI/CD | ⚠️ Partial | 2026-09-04 | `docker build -t clinical-trial-intelligence:test .` | Dockerfile, docker-compose, GitHub Actions CI, ruff lint config all written; lint passes (0 issues) and 166/167 tests pass locally; **Docker build itself unverified** — failed with "no space left on device" (host C: drive at 0 bytes free / Docker Desktop unable to start), not a code issue. Skipped by user pending disk space. |
+| 15 | Documentation & Demo Packaging | ✅ Working | 2026-09-04 | — | Root `README.md` + `docs/DEMO_SCRIPT.md` written; every command cross-checked against a real file; Module 14 represented honestly as unverified, not hidden |
 | 16 | Cloud Architecture & Responsible AI | ❌ | — | — | — |
 | 17 | Metrics Rollup & STAR Narrative | ❌ | — | — | — |
 | 18 | Mock Defense | ❌ | — | — | — |

@@ -1,0 +1,47 @@
+# Module 14 CI. Lint + test on every PR; build (not push/deploy) the image
+# to prove it's buildable. Push/deploy is deliberately absent -- D-04
+# scoped this project to local Docker + a documented AWS design, not a
+# live deployment, and CI shouldn't quietly expand that scope on its own.
+#
+# Live agent tests skip themselves automatically (every tests/test_*_live.py
+# file already guards on `ANTHROPIC_API_KEY` being set) -- they only run
+# here if the repo owner deliberately adds a real key as a GitHub secret,
+# an informed opt-in this workflow does not force.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: python -m ruff check src/ tests/
+
+      - name: Run test suite
+        run: python -m pytest tests/ -v
+        env:
+          # Empty/unset -> live tests self-skip (see header comment above).
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+  build-image:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t clinical-trial-intelligence:ci .

@@ -2,7 +2,7 @@
 tmp_path via monkeypatch, never the real data/audit/audit_log.jsonl, so
 running the suite never pollutes the real log with test noise."""
 
-from datetime import date, datetime
+from datetime import datetime
 
 import pytest
 from pydantic import BaseModel
@@ -10,10 +10,7 @@ from pydantic import BaseModel
 from src import audit
 from src.schemas import (
     AuditEventType,
-    Citation,
     LLMCallRecord,
-    ReviewDecision,
-    SourceType,
 )
 
 

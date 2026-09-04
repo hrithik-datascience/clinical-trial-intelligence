@@ -189,7 +189,10 @@ def test_regulatory_records_missing_input_when_the_protocol_agent_fails(monkeypa
     Regulatory must say so, not be silently skipped."""
     from src.agents import protocol as protocol_mod
 
-    monkeypatch.setattr(protocol_mod, "extract", lambda nct_id, run_id=None: (_ for _ in ()).throw(RuntimeError("no record")))
+    monkeypatch.setattr(
+        protocol_mod, "extract",
+        lambda nct_id, run_id=None: (_ for _ in ()).throw(RuntimeError("no record")),
+    )
 
     result = run(
         SupervisorRequest(query="review NCT04280705"),

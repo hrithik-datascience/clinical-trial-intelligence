@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.agents.errors import GroundingError, is_grounded
+from src.agents.errors import is_grounded
 from src.agents.evidence import _LlmClaim, _LlmSynthesis
 from src.schemas import EvidenceStrength
 

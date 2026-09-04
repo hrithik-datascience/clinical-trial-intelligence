@@ -1,0 +1,15 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# T-29: a deliberate, explicit ruleset -- pyflakes correctness (F),
+# pycodestyle errors/warnings (E/W), import sorting (I). Running ruff with
+# no config for the first time in Module 14 (it had been in requirements.txt
+# since Module 1, unrun) surfaced its actual no-config default: a much
+# broader, opinionated set (DTZ, BLE, C4, ISC, SIM, UP, PYI...) this project
+# never chose, including BLE001 flagging src/agents/supervisor.py's
+# deliberate broad `except Exception` failure-isolation pattern (T-20) as a
+# bug. Selecting explicitly here rather than accepting whatever the tool
+# ships with by default.
+select = ["E", "F", "I", "W"]

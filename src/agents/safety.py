@@ -93,7 +93,10 @@ def _fallback_narrative(term: str, count: int, known: bool) -> str:
     model again -- real safety data reaching the reviewer matters more than
     a second attempt at prose, and API calls are used deliberately in this
     project, not spent retrying for style."""
-    status = "a known, labeled risk" if known else "not on the current FDA label — an unexpected signal worth a closer look"
+    status = (
+        "a known, labeled risk" if known
+        else "not on the current FDA label — an unexpected signal worth a closer look"
+    )
     return (
         f"FAERS recorded {count} report(s) of '{term}' in association with this product. "
         f"This is {status}."

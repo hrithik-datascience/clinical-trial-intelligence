@@ -29,6 +29,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
+# ruff: noqa: E402 -- every import below must come after the sys.path
+# bootstrap above, not before it (that's the whole point of the bootstrap).
 import streamlit as st
 from pydantic import ValidationError
 
@@ -42,7 +44,11 @@ from src.validation import confidence_breakdown, validate
 
 st.set_page_config(page_title="Clinical Trial Intelligence — Review", layout="wide")
 
-_DECISION_LABELS = {"Approve": ReviewDecision.APPROVED, "Edit": ReviewDecision.EDITED, "Reject": ReviewDecision.REJECTED}
+_DECISION_LABELS = {
+    "Approve": ReviewDecision.APPROVED,
+    "Edit": ReviewDecision.EDITED,
+    "Reject": ReviewDecision.REJECTED,
+}
 _FLAG_ICON = {
     FlagType.LOW_CONFIDENCE: "🟡",
     FlagType.UNRESOLVED_CITATION: "🔴",

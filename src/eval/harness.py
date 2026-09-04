@@ -68,7 +68,8 @@ def eval_protocol() -> ProtocolEvalResult:
 
             if expectation.should_extract and extracted:
                 confusion[name]["TP"] += 1
-                if expectation.value_contains and expectation.value_contains.lower() not in (actual.value or "").lower():
+                actual_value = (actual.value or "").lower()
+                if expectation.value_contains and expectation.value_contains.lower() not in actual_value:
                     result.value_mismatches.append(
                         f"{example.nct_id}.{name}: expected value containing "
                         f"{expectation.value_contains!r}, got {actual.value!r}"

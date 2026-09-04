@@ -105,7 +105,9 @@ def test_false_positive_lowers_precision_not_recall(monkeypatch):
     monkeypatch.setattr("src.eval.harness.PROTOCOL_EXAMPLES", [example])
     monkeypatch.setattr(
         protocol_mod, "extract",
-        lambda nct_id: _extraction(population=ExtractedField(value="adults", status=FieldStatus.EXTRACTED, citation=_citation())),
+        lambda nct_id: _extraction(
+            population=ExtractedField(value="adults", status=FieldStatus.EXTRACTED, citation=_citation())
+        ),
     )
 
     result = eval_protocol()

@@ -23,6 +23,7 @@ from streamlit.testing.v1 import AppTest
 # first run. Explicit here rather than relying on import order elsewhere.
 load_dotenv()
 
+# ruff: noqa: E402 -- must come after load_dotenv() above, see the comment there.
 from src.schemas import (
     AgentName,
     BriefingPacket,
@@ -250,7 +251,11 @@ def test_edit_only_offers_fields_that_carry_a_citation():
     at.radio[0].set_value("Edit")
     at.run()
 
-    editable_labels = {t.label for t in at.text_input if t.label not in ("NCT id (optional — or include it in the request above)", "Drug (optional — never inferred from free text, HG-1)")}
+    intake_labels = (
+        "NCT id (optional — or include it in the request above)",
+        "Drug (optional — never inferred from free text, HG-1)",
+    )
+    editable_labels = {t.label for t in at.text_input if t.label not in intake_labels}
     assert "Phase" in editable_labels
     assert "Population" not in editable_labels
 

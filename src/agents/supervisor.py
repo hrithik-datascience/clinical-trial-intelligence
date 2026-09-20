@@ -465,3 +465,65 @@ def run(
     )
     audit.log_event(run_id, AuditEventType.RUN_COMPLETED, supervisor_run)
     return supervisor_run
+
+
+def run_streaming(
+    request: SupervisorRequest,
+    kb: KnowledgeBase | None = None,
+    agents: list[AgentName] | None = None,
+):
+    """Same routing/execution/aggregation as run(), but as a generator —
+    purely additive, run() itself is untouched and stays the function every
+    other caller and test uses.
+
+    Yields the AgentName of each graph node as it finishes (for a caller,
+    e.g. the UI, to show live per-agent progress instead of one opaque
+    spinner), then yields the final SupervisorRun as the last item. Callers
+    that only want the final result can do:
+        *_, supervisor_run = run_streaming(request, kb=kb)
+    """
+    run_id = f"run-{uuid.uuid4().hex[:12]}"
+    started = time.monotonic()
+
+    audit.log_event(run_id, AuditEventType.QUERY_RECEIVED, request)
+    decision = route(request, agents=agents, run_id=run_id)
+    audit.log_event(run_id, AuditEventType.ROUTING_DECISION, decision)
+
+    state = {
+        "request": request,
+        "run_id": run_id,
+        "selected": decision.selected,
+        "kb": kb,
+        "protocol": None,
+        "evidence": None,
+        "regulatory": [],
+        "safety": None,
+        "failures": [],
+    }
+    final_state = dict(state)
+
+    # StateGraph.stream() yields {node_name: partial_state} after each node
+    # completes -- same graph, same nodes/edges as invoke() uses in run();
+    # this only observes progress, it does not change what runs.
+    for step in _compiled().stream(state):
+        for node_name, node_output in step.items():
+            final_state.update(node_output)
+            try:
+                yield AgentName(node_name)
+            except ValueError:
+                continue  # non-agent internal node name, nothing to show
+
+    supervisor_run = SupervisorRun(
+        run_id=run_id,
+        query=request.query,
+        created_at=datetime.now(),
+        routing=decision,
+        protocol=final_state.get("protocol"),
+        evidence=final_state.get("evidence"),
+        regulatory=final_state.get("regulatory") or [],
+        safety=final_state.get("safety"),
+        failures=final_state.get("failures") or [],
+        elapsed_seconds=round(time.monotonic() - started, 2),
+    )
+    audit.log_event(run_id, AuditEventType.RUN_COMPLETED, supervisor_run)
+    yield supervisor_run

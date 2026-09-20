@@ -35,14 +35,41 @@ import streamlit as st
 from pydantic import ValidationError
 
 from src.agents.supervisor import SupervisorRequest
-from src.agents.supervisor import run as run_supervisor
+from src.agents.supervisor import run_streaming as run_supervisor_streaming
 from src.kb.build import KB_DIR
 from src.kb.store import KnowledgeBase
 from src.review import PROTOCOL_FIELD_NAMES, decide, editable_protocol_fields
-from src.schemas import BriefingPacket, FieldStatus, FlagType, ReviewDecision, Severity, SupervisorRun
+from src.schemas import (
+    AgentName,
+    BriefingPacket,
+    FieldStatus,
+    FlagType,
+    ReviewDecision,
+    Severity,
+    SupervisorRun,
+)
 from src.validation import confidence_breakdown, validate
 
-st.set_page_config(page_title="Clinical Trial Intelligence — Review", layout="wide")
+st.set_page_config(page_title="Clinical Trial Intelligence — Review", layout="wide", page_icon="🧪")
+
+
+def _check_password() -> bool:
+    """Gate the whole app behind st.secrets['APP_PASSWORD']."""
+
+    def _entered():
+        if st.session_state.get("password") == st.secrets.get("APP_PASSWORD"):
+            st.session_state["authenticated"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["authenticated"] = False
+
+    if st.session_state.get("authenticated"):
+        return True
+
+    st.text_input("Access password", type="password", on_change=_entered, key="password")
+    if "authenticated" in st.session_state and not st.session_state["authenticated"]:
+        st.error("Incorrect password.")
+    return False
 
 _DECISION_LABELS = {
     "Approve": ReviewDecision.APPROVED,
@@ -56,6 +83,78 @@ _FLAG_ICON = {
     FlagType.MISSING_AGENT_OUTPUT: "🔴",
 }
 
+# Agent identity: one accent color per agent, used consistently for the
+# live-progress line, the result chip, and the sidebar dot. Colors carry no
+# meaning beyond "which agent" -- pass/flag/fail state is shown separately
+# via icon, never encoded in this color alone.
+_AGENT_STYLE = {
+    AgentName.PROTOCOL: {"label": "Protocol agent", "icon": "📋", "color": "#639922"},
+    AgentName.EVIDENCE: {"label": "Evidence agent", "icon": "📚", "color": "#378ADD"},
+    AgentName.REGULATORY: {"label": "Regulatory agent", "icon": "⚖️", "color": "#D85A30"},
+    AgentName.SAFETY: {"label": "Safety agent", "icon": "🛡️", "color": "#7F77DD"},
+}
+
+_REJECTION_REASONS = (
+    "Missing or weak citation",
+    "Incorrect interpretation",
+    "Outdated guidance used",
+    "Needs clinical judgment",
+)
+
+_EXAMPLE_QUERIES = (
+    "Review NCT04280705 against statistical guidance and screen its safety signals.",
+    "Check protocol eligibility criteria for NCT03765112 against ICH E9 requirements.",
+    "Screen recent adverse events for Drug X and flag any regulatory concerns.",
+)
+
+
+def _inject_css() -> None:
+    st.markdown(
+        """
+        <style>
+        .cti-agent-chip {
+            display:flex; align-items:center; gap:8px;
+            padding:10px 12px; border-radius:8px; margin-bottom:6px;
+            border-left:4px solid var(--chip-color);
+            background:rgba(0,0,0,0.02);
+        }
+        .cti-agent-chip .cti-icon {
+            width:26px; height:26px; border-radius:7px;
+            background:var(--chip-color); display:flex; align-items:center;
+            justify-content:center; flex-shrink:0; font-size:14px;
+        }
+        .cti-agent-chip .cti-label { font-weight:600; font-size:13px; margin:0; }
+        .cti-agent-chip .cti-sub { font-size:11px; color:#666; margin:0; }
+        .cti-sidebar-brand { font-size:13px; color:#8a8a8a; margin-top:-6px; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_sidebar(kb: KnowledgeBase | None) -> None:
+    with st.sidebar:
+        st.markdown("### 🧪 Clinical Trial Intelligence")
+        st.markdown('<p class="cti-sidebar-brand">by Hrithik Malviya</p>', unsafe_allow_html=True)
+        st.divider()
+        if kb is None:
+            st.error("● Knowledge base offline")
+        else:
+            st.success("● System online")
+        reviews_done = len(st.session_state.get("session_runs", []))
+        st.metric("Reviews this session", reviews_done)
+        st.divider()
+        st.caption("Agents")
+        for name, style in _AGENT_STYLE.items():
+            st.markdown(
+                f'<div style="display:flex;align-items:center;gap:8px;'
+                f'font-size:12px;margin-bottom:4px;color:#555;">'
+                f'<span style="width:8px;height:8px;border-radius:50%;'
+                f'background:{style["color"]};display:inline-block;"></span>'
+                f'{style["label"]}</div>',
+                unsafe_allow_html=True,
+            )
+
 
 @st.cache_resource(show_spinner="Loading knowledge base...")
 def _load_kb() -> KnowledgeBase | None:
@@ -68,6 +167,8 @@ def _init_state() -> None:
     st.session_state.setdefault("supervisor_run", None)
     st.session_state.setdefault("packet", None)
     st.session_state.setdefault("decided_packet", None)
+    st.session_state.setdefault("session_runs", [])
+    st.session_state.setdefault("intake_query", "")
 
 
 def _render_disclaimer() -> None:
@@ -85,9 +186,17 @@ def _render_intake_form(kb: KnowledgeBase | None) -> None:
     if kb is None:
         st.error(f"No knowledge base at `{KB_DIR}`. Run `python -m src.kb.build` first.")
 
+    st.caption("Try an example")
+    ex_cols = st.columns(3)
+    for col, example in zip(ex_cols, _EXAMPLE_QUERIES):
+        if col.button(example, use_container_width=True, key=f"example_{hash(example)}"):
+            st.session_state["intake_query"] = example
+            st.rerun()
+
     with st.form("intake"):
         query = st.text_area(
             "Request",
+            value=st.session_state["intake_query"],
             placeholder="e.g. Review NCT04280705 against statistical guidance and screen its safety signals.",
         )
         col1, col2 = st.columns(2)
@@ -108,13 +217,24 @@ def _render_intake_form(kb: KnowledgeBase | None) -> None:
         drug=drug or None,
         protocol_summary=protocol_summary or None,
     )
-    with st.spinner("Routing and running agents — this makes live API calls..."):
-        supervisor_run = run_supervisor(request, kb=kb)
-        packet = validate(supervisor_run, kb=kb)
+
+    supervisor_run: SupervisorRun | None = None
+    with st.status("Running multi-agent review...", expanded=True) as status:
+        for item in run_supervisor_streaming(request, kb=kb):
+            if isinstance(item, SupervisorRun):
+                supervisor_run = item
+                break
+            style = _AGENT_STYLE[item]
+            st.write(f"{style['icon']} {style['label']} — done")
+        status.update(label="Review complete", state="complete", expanded=False)
+
+    packet = validate(supervisor_run, kb=kb)
 
     st.session_state["supervisor_run"] = supervisor_run
     st.session_state["packet"] = packet
     st.session_state["decided_packet"] = None
+    st.session_state["intake_query"] = ""
+    st.session_state["session_runs"].append(supervisor_run.run_id)
     st.rerun()
 
 
@@ -141,6 +261,17 @@ def _render_confidence(packet: BriefingPacket, supervisor_run: SupervisorRun, kb
     )
 
 
+def _agent_chip(agent: AgentName, subtitle: str) -> None:
+    style = _AGENT_STYLE[agent]
+    st.markdown(
+        f'<div class="cti-agent-chip" style="--chip-color:{style["color"]};">'
+        f'<span class="cti-icon">{style["icon"]}</span>'
+        f'<div><p class="cti-label">{style["label"]}</p>'
+        f'<p class="cti-sub">{subtitle}</p></div></div>',
+        unsafe_allow_html=True,
+    )
+
+
 def _render_flags(packet: BriefingPacket) -> None:
     if not packet.validation_flags:
         st.success("No validation flags.")
@@ -150,6 +281,19 @@ def _render_flags(packet: BriefingPacket) -> None:
         agents = ", ".join(a.value for a in flag.agents_involved)
         st.markdown(f"{_FLAG_ICON.get(flag.flag_type, '⚠️')} **{flag.flag_type.value}** ({agents})")
         st.caption(flag.detail)
+
+
+def _render_agent_summary(packet: BriefingPacket) -> None:
+    st.subheader("Agent summary")
+    if packet.protocol is not None:
+        _agent_chip(AgentName.PROTOCOL, f"Completeness: {packet.protocol.completeness():.0%}")
+    if packet.evidence is not None:
+        _agent_chip(AgentName.EVIDENCE, f"Strength: {packet.evidence.strength.value}")
+    if packet.regulatory:
+        flagged = sum(1 for f in packet.regulatory if f.severity is Severity.FLAG)
+        _agent_chip(AgentName.REGULATORY, f"{flagged} of {len(packet.regulatory)} need review")
+    if packet.safety is not None:
+        _agent_chip(AgentName.SAFETY, f"{len(packet.safety.associations)} associations reviewed")
 
 
 def _render_protocol(packet: BriefingPacket) -> None:
@@ -224,12 +368,20 @@ def _render_review(packet: BriefingPacket) -> None:
                 if new_value != current:
                     field_edits[name] = new_value
 
+    reason_prefix = ""
+    if decision is ReviewDecision.REJECTED:
+        st.caption("Reason for rejection")
+        chosen = [r for r in _REJECTION_REASONS if st.checkbox(r, key=f"reason_{r}")]
+        if chosen:
+            reason_prefix = f"[{', '.join(chosen)}] "
+
     note_required = decision in (ReviewDecision.REJECTED, ReviewDecision.EDITED)
     reviewer_note = st.text_area(f"Reviewer note{' (required)' if note_required else ' (optional)'}")
 
     if st.button("Submit decision", type="primary"):
+        full_note = f"{reason_prefix}{reviewer_note}".strip() or None
         try:
-            final_packet = decide(packet, decision, reviewer_note or None, field_edits)
+            final_packet = decide(packet, decision, full_note, field_edits)
         except (ValidationError, ValueError, KeyError) as exc:
             st.error(f"Could not record this decision: {exc}")
             return
@@ -250,11 +402,18 @@ def _render_decided(packet: BriefingPacket) -> None:
 
 
 def main() -> None:
+    if not _check_password():
+        st.stop()
+
     _init_state()
+    _inject_css()
+
+    kb = _load_kb()
+    _render_sidebar(kb)
+
     st.title("Clinical Trial Intelligence — Human Review")
     _render_disclaimer()
 
-    kb = _load_kb()
     _render_intake_form(kb)
 
     if st.session_state["decided_packet"] is not None:
@@ -268,6 +427,7 @@ def main() -> None:
 
     _render_run_summary(supervisor_run)
     _render_confidence(packet, supervisor_run, kb)
+    _render_agent_summary(packet)
     _render_flags(packet)
     _render_protocol(packet)
     _render_regulatory(packet)

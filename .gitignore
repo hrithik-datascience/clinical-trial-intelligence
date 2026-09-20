@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+.streamlit/secrets.toml
 venv/
 .venv/
 __pycache__/
@@ -15,3 +16,6 @@ data/audit/
 venv/
 .pytest_cache/
 .ruff_cache/
+src_zip.zip
+docs/*.zip
+docs/*.pdf

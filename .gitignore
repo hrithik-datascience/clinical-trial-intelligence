@@ -17,5 +17,5 @@ venv/
 .pytest_cache/
 .ruff_cache/
 src_zip.zip
-docs/*.zip
-docs/*.pdf
+docs/
+master_prompt_project_e.md

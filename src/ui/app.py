@@ -158,6 +158,15 @@ def _render_sidebar(kb: KnowledgeBase | None) -> None:
 
 @st.cache_resource(show_spinner="Loading knowledge base...")
 def _load_kb() -> KnowledgeBase | None:
+    # Docker deploys build the KB in docker/entrypoint.sh before the app
+    # starts. Streamlit Community Cloud runs this file directly with no such
+    # entrypoint, so the one-time live-source build has to happen here
+    # instead, the first time the app is opened with no index on disk yet.
+    if not (KB_DIR / "faiss.index").exists():
+        from src.kb.build import build as build_kb
+
+        with st.spinner("No knowledge base found — building it now from 4 live public sources (one-time)..."):
+            build_kb()
     if not (KB_DIR / "faiss.index").exists():
         return None
     return KnowledgeBase.load(KB_DIR)

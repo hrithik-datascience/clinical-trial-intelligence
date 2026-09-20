@@ -104,7 +104,6 @@ _REJECTION_REASONS = (
 _EXAMPLE_QUERIES = (
     "Review NCT04280705 against statistical guidance and screen its safety signals.",
     "Check protocol eligibility criteria for NCT03765112 against ICH E9 requirements.",
-    "Screen recent adverse events for Drug X and flag any regulatory concerns.",
 )
 
 
@@ -196,7 +195,7 @@ def _render_intake_form(kb: KnowledgeBase | None) -> None:
         st.error(f"No knowledge base at `{KB_DIR}`. Run `python -m src.kb.build` first.")
 
     st.caption("Try an example")
-    ex_cols = st.columns(3)
+    ex_cols = st.columns(len(_EXAMPLE_QUERIES))
     for col, example in zip(ex_cols, _EXAMPLE_QUERIES):
         if col.button(example, use_container_width=True, key=f"example_{hash(example)}"):
             st.session_state["intake_query"] = example

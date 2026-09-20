@@ -97,11 +97,9 @@ A step-by-step walkthrough of all four use cases is in
 | File | Purpose |
 |---|---|
 | [`STATUS.md`](STATUS.md) | What actually runs, per module, with real verification |
-| [`docs/modules/`](docs/modules/) | One file per module — what was built, real findings, limitations |
 | [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md) | Current state, CAN/CANNOT-say claims |
 | [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md) | Project-level decisions with alternatives |
 | [`docs/TECHNIQUE_METHOD_LOG.md`](docs/TECHNIQUE_METHOD_LOG.md) | Method choices with alternatives, per technique |
-| [`docs/ASSUMPTION_REGISTER.md`](docs/ASSUMPTION_REGISTER.md) | Assumptions still open |
 | [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) | Live walkthrough script + recording plan |
 
 ## Limitations (read before demoing)
